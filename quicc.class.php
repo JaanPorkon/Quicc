@@ -9,21 +9,19 @@ class Quicc
 	private $params = null;
 	public $db = null;
 
-	public function __construct($config)
+	public function __construct($config = array('debug' => false, 'db' => null))
 	{
 		$this->config = $config;
 
-		if(array_key_exists('db', $config))
+		if(array_key_exists('debug', $config) && $config['debug'])
+		{
+			ini_set('display_errors', true);
+			error_reporting(E_ALL);
+		}
+
+		if(array_key_exists('db', $config) && !is_null($config['db']))
 		{
 			$this->db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['name']);
-		}
-	}
-
-	private function __destruct()
-	{
-		if(!is_null($this->db))
-		{
-			$this->db->close();
 		}
 	}
 
