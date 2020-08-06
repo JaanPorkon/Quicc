@@ -172,7 +172,7 @@ class Quicc
 				}
 				if($pieces[1] === 'int' && !is_numeric($value))
 				{
-					throw new Exception(sprintf('URL parameter %s is not an integer!', $pieces[0]));
+					throw new Exception(sprintf('URL parameter "%s" is not an integer!', $pieces[0]));
 				}
 				elseif($pieces[1] === 'bool' && in_array($value, $booleans))
 				{
@@ -180,7 +180,15 @@ class Quicc
 				}
 				elseif($pieces[1] === 'bool' && !in_array($value, $booleans))
 				{
-					throw new Exception(sprintf('URL parameter %s is not a boolean!', $pieces[0]));
+					throw new Exception(sprintf('URL parameter "%s" is not a boolean!', $pieces[0]));
+				}
+				elseif($pieces[1] === 'email' && filter_var($value, FILTER_VALIDATE_EMAIL))
+				{
+					$processed_params[$pieces[0]] = $value;
+				}
+				elseif($pieces[1] === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL))
+				{
+					throw new Exception(sprintf('URL parameter "%s" is not a valid email address!', $pieces[0]));
 				}
 			}
 			else
