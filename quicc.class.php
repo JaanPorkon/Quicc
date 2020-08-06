@@ -11,7 +11,11 @@ class Quicc
 
 	public function __construct($config = null)
 	{
-		$this->config = array_merge($this->config, $config);
+		if(!is_null($config))
+		{
+			$config = array_merge($this->config, $config);
+			$this->config = $config;
+		}
 
 		if(array_key_exists('debug', $this->config) && $this->config['debug'])
 		{
@@ -25,7 +29,7 @@ class Quicc
 		}
 	}
 
-	private function parse_route($uri, $callback)
+	private function parse_route($uri, $method, $callback)
 	{
 		$route = array();
 		$pieces = explode('/', $uri);
@@ -60,6 +64,7 @@ class Quicc
 		$route['pattern'] = sprintf('/%s/', join('\/', $pattern));
 		$route['params'] = $params;
 		$route['callback'] = $callback;
+		$route['method'] = strtoupper($method);
 
 		return $route;
 	}
@@ -105,8 +110,7 @@ class Quicc
 			throw new Exception(sprintf('"%s" is not an allowed method!', $name));
 		}
 
-		$this->validate_method(strtoupper($name));
-		$this->routes[$args[0]] = $this->parse_route($args[0], $args[1]);
+		$this->routes[$args[0]] = $this->parse_route($args[0], $name, $args[1]);
 	}
 
 	private function detect_route()
@@ -243,7 +247,7 @@ class Quicc
 		}
 		else
 		{
-			if(filter_var($type, $types[$type]))
+			if(filter_var($value, $types[$type]))
 			{
 				return $value;
 			}
@@ -316,6 +320,8 @@ class Quicc
 
 		if(!is_null($this->route))
 		{
+			$this->validate_method($this->route['method']);
+
 			$this->params = $this->detect_params();
 
 			$ordered_params = array();

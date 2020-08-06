@@ -75,6 +75,7 @@ $q->get('/user/{id:int}/', function($id) {
 Available types:
 * **int** - for integer
 * **bool** - for boolean (0 or 1 or true or false)
+* **email** - for email addresses
 
 You may use callback params in different order, but it is important that you name your parameters as you named them in your URL configuration:
 
