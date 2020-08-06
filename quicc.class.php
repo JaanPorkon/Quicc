@@ -29,10 +29,26 @@ class Quicc
 		}
 	}
 
+	private function count_url_pieces($value)
+	{
+		$counter = 0;
+
+		foreach(explode('/', $value) as $pieces)
+		{
+			if(trim($pieces) !== '')
+			{
+				$counter++;
+			}
+		}
+
+		return $counter;
+	}
+
 	private function parse_route($uri, $method, $callback)
 	{
 		$route = array();
 		$pieces = explode('/', $uri);
+		$piece_count = $this->count_url_pieces($uri);
 		$pattern = array();
 		$params = array();
 
@@ -65,6 +81,7 @@ class Quicc
 		$route['params'] = $params;
 		$route['callback'] = $callback;
 		$route['method'] = strtoupper($method);
+		$route['piece_count'] = $piece_count;
 
 		return $route;
 	}
@@ -115,9 +132,11 @@ class Quicc
 
 	private function detect_route()
 	{
+		$piece_count = $this->count_url_pieces($this->uri);
+
 		foreach($this->routes as $name => $route)
 		{
-			if(preg_match($route['pattern'], $this->uri) !== 0)
+			if(preg_match($route['pattern'], $this->uri) !== 0 && $route['piece_count'] == $piece_count)
 			{
 				return $route;
 			}
