@@ -257,7 +257,7 @@ class Quicc
 
 	public function listen()
 	{
-		$this->uri = str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['PHP_SELF']);
+		$this->uri = $_SERVER['REQUEST_URI'];
 		$this->route = $this->detect_route();
 
 		if(!is_null($this->route))

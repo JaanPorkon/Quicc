@@ -92,6 +92,24 @@ Public methods:
 * **qs($key)** - gets a value from query string
 * **data($key)** - gets the value from POST body (set content type to "application/json" when sending JSON)
 
+# URL configuration
+
+When you are using Nginx enter this to your configuration:
+```
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+```
+
+For Apache use:
+
+```
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+```
 
 # License
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
