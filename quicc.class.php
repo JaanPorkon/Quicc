@@ -2,10 +2,30 @@
 
 class Quicc
 {
+	private $config = null;
 	private $routes = [];
 	private $route = null;
 	private $uri = null;
 	private $params = null;
+	public $db = null;
+
+	public function __construct($config)
+	{
+		$this->config = $config;
+
+		if(array_key_exists('db', $config))
+		{
+			$this->db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['name']);
+		}
+	}
+
+	private function __destruct()
+	{
+		if(!is_null($this->db))
+		{
+			$this->db->close();
+		}
+	}
 
 	private function parse_route($uri, $callback)
 	{
@@ -250,6 +270,11 @@ class Quicc
 
 			foreach($this->get_callback_params() as $param)
 			{
+				if(!array_key_exists($param->name, $this->params))
+				{
+					throw new Exception(sprintf('The parameter "%s" is missing from your callback!', $param->name));
+				}
+
 				$ordered_params[] = $this->params[$param->name];
 			}
 
