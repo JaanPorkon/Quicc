@@ -2,26 +2,26 @@
 
 class Quicc
 {
-	private $config = null;
+	private $config = array('debug' => false, 'db' => null);
 	private $routes = [];
 	private $route = null;
 	private $uri = null;
 	private $params = null;
 	public $db = null;
 
-	public function __construct($config = array('debug' => false, 'db' => null))
+	public function __construct($config = null)
 	{
-		$this->config = $config;
+		$this->config = array_merge($this->config, $config);
 
-		if(array_key_exists('debug', $config) && $config['debug'])
+		if(array_key_exists('debug', $this->config) && $this->config['debug'])
 		{
 			ini_set('display_errors', true);
 			error_reporting(E_ALL);
 		}
 
-		if(array_key_exists('db', $config) && !is_null($config['db']))
+		if(array_key_exists('db', $this->config) && !is_null($this->config['db']))
 		{
-			$this->db = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['password'], $config['db']['name']);
+			$this->db = new mysqli($this->config['db']['host'], $this->config['db']['user'], $this->config['db']['password'], $this->config['db']['name']);
 		}
 	}
 
@@ -221,20 +221,66 @@ class Quicc
 		return $_xml->asXML();
 	}
 
-	public function qs($name)
+	private function validate_input($value, $type, $throw_exception)
 	{
-		return filter_input(INPUT_GET, $name, FILTER_SANITIZE_SPECIAL_CHARS);
-	}
+		$types = array(
+			'int' => FILTER_VALIDATE_INT,
+			'email' => FILTER_VALIDATE_EMAIL,
+			'ip' => FILTER_VALIDATE_IP
+		);
 
-	public function data($name)
-	{
-		if($_SERVER['CONTENT_TYPE'] === 'application/json')
+		if(!array_key_exists($type, $types))
 		{
-			return json_decode(file_get_contents('php://input'), true)[$name];
+			throw new Exception(sprintf('Data type "%s" does not exist!', $type));
 		}
 		else
 		{
-			return filter_input(INPUT_POST, $name, FILTER_SANITIZE_SPECIAL_CHARS);
+			if(filter_var($type, $types[$type]))
+			{
+				return $value;
+			}
+
+			if($throw_exception)
+			{
+				throw new Exception(sprintf('Value "%s" is not valid "%s"!', $value, $type));
+			}
+		}
+
+		return null;
+	}
+
+	public function qs($name, $type = null, $throw_exception = false)
+	{
+		$value = filter_input(INPUT_GET, $name, FILTER_SANITIZE_SPECIAL_CHARS);
+
+		if(!is_null($type) && trim($name) !== '')
+		{
+			return $this->validate_input($value, $type, $throw_exception);
+		}
+		else
+		{
+			return $value;
+		}
+	}
+
+	public function data($name, $type = null, $throw_exception = false)
+	{
+		if($_SERVER['CONTENT_TYPE'] === 'application/json')
+		{
+			$value = json_decode(file_get_contents('php://input'), true)[$name];
+		}
+		else
+		{
+			$value = filter_input(INPUT_POST, $name, FILTER_SANITIZE_SPECIAL_CHARS);
+		}
+
+		if(!is_null($type) && trim($name) !== '')
+		{
+			return $this->validate_input($value, $type, $throw_exception);
+		}
+		else
+		{
+			return $value;
 		}
 	}
 

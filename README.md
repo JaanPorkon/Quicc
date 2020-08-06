@@ -89,8 +89,8 @@ Public methods:
 * **json($array)** - outputs JSON
 * **xml($array)** - outputs XML
 * **get_params()** - returns an array of URL parameters with their values
-* **qs($key)** - gets a value from query string
-* **data($key)** - gets the value from POST body (set content type to "application/json" when sending JSON)
+* **qs($key, $type = null, $throw_exception = false)** - gets a value from query string. Available types: int, email, ip. Throws an invalid type exception when "$throw_exception" is true.
+* **data($key, $type = null, $throw_exception = false)** - gets the value from POST body (set content type to "application/json" when sending JSON). Available types: int, email, ip. Throws an invalid type exception when "$throw_exception" is true.
 
 # URL configuration
 
