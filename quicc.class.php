@@ -261,29 +261,32 @@ class Quicc
 			{
 				$booleans = array('0', '1', 'true', 'false');
 
-				if($pieces[1] === 'int' && is_numeric($value))
+				if($pieces[1] == 'int')
 				{
+					if(!is_numeric($value))
+					{
+						throw new Exception(sprintf('URL parameter "%s" is not an integer!', $pieces[0]));
+					}
+
 					$processed_params[$pieces[0]] = intval($value);
 				}
-				if($pieces[1] === 'int' && !is_numeric($value))
+				elseif($pieces[1] == 'bool')
 				{
-					throw new Exception(sprintf('URL parameter "%s" is not an integer!', $pieces[0]));
-				}
-				elseif($pieces[1] === 'bool' && in_array($value, $booleans))
-				{
+					if(!in_array($value, $booleans))
+					{
+						throw new Exception(sprintf('URL parameter "%s" is not a boolean!', $pieces[0]));
+					}
+
 					$processed_params[$pieces[0]] = boolval($value);
 				}
-				elseif($pieces[1] === 'bool' && !in_array($value, $booleans))
+				elseif($pieces[1] == 'email')
 				{
-					throw new Exception(sprintf('URL parameter "%s" is not a boolean!', $pieces[0]));
-				}
-				elseif($pieces[1] === 'email' && filter_var($value, FILTER_VALIDATE_EMAIL))
-				{
+					if(!filter_var($value, FILTER_VALIDATE_EMAIL))
+					{
+						throw new Exception(sprintf('URL parameter "%s" is not a valid email address!', $pieces[0]));
+					}
+
 					$processed_params[$pieces[0]] = $value;
-				}
-				elseif($pieces[1] === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL))
-				{
-					throw new Exception(sprintf('URL parameter "%s" is not a valid email address!', $pieces[0]));
 				}
 			}
 			else
@@ -400,9 +403,16 @@ class Quicc
 	 */
 	public function data($name, $type = null, $throw_exception = false)
 	{
+		$value = null;
+
 		if($_SERVER['CONTENT_TYPE'] === 'application/json')
 		{
-			$value = json_decode(file_get_contents('php://input'), true)[$name];
+			$object = json_decode(file_get_contents('php://input'), true);
+
+			if(array_key_exists($name, $object))
+			{
+				$value = $object[$name];
+			}
 		}
 		else
 		{
