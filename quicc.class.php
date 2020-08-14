@@ -9,6 +9,11 @@ class Quicc
 	private $params = null;
 	public $db = null;
 
+	/**
+	 * Quicc constructor.
+	 *
+	 * @param null $config
+	 */
 	public function __construct($config = null)
 	{
 		if(!is_null($config))
@@ -29,6 +34,46 @@ class Quicc
 		}
 	}
 
+	/*
+	 * Helpers
+	 */
+
+	/**
+	 * Sets the content type header
+	 *
+	 * @param $value
+	 */
+	private function set_content_type($value)
+	{
+		header(sprintf('Content-Type: %s', $value));
+	}
+
+	/**
+	 * Sets the response header
+	 *
+	 * @param $code
+	 */
+	private function set_response_header($code)
+	{
+		$responses = array(
+			404 => 'Not Found',
+			405 => 'Method Not Allowed'
+		);
+
+		header(sprintf('%s %d %s', $_SERVER['SERVER_PROTOCOL'], $code, $responses[$code]), true, $code);
+		exit;
+	}
+
+	/*
+	 * Quicc methods
+	 */
+
+	/**
+	 * Counts pieces of the URL for pattern matching
+	 *
+	 * @param $value
+	 * @return int
+	 */
 	private function count_url_pieces($value)
 	{
 		$counter = 0;
@@ -44,6 +89,14 @@ class Quicc
 		return $counter;
 	}
 
+	/**
+	 * Translates user created routes into proper structure
+	 *
+	 * @param $uri
+	 * @param $method
+	 * @param $callback
+	 * @return array
+	 */
 	private function parse_route($uri, $method, $callback)
 	{
 		$route = array();
@@ -86,6 +139,13 @@ class Quicc
 		return $route;
 	}
 
+	/**
+	 * Detects user function's parameters
+	 *
+	 * @return array
+	 * @throws ReflectionException
+	 */
+
 	private function get_callback_params()
 	{
 		$ref = new ReflectionFunction($this->route['callback']);
@@ -99,17 +159,11 @@ class Quicc
 		return $params;
 	}
 
-	private function set_response_header($code)
-	{
-		$responses = array(
-			404 => 'Not Found',
-			405 => 'Method Not Allowed'
-		);
-
-		header(sprintf('%s %d %s', $_SERVER['SERVER_PROTOCOL'], $code, $responses[$code]), true, $code);
-		exit;
-	}
-
+	/**
+	 * Validates the request method
+	 *
+	 * @param $allowed_method
+	 */
 	private function validate_method($allowed_method)
 	{
 		if(strtoupper($_SERVER['REQUEST_METHOD']) !== $allowed_method)
@@ -118,6 +172,13 @@ class Quicc
 		}
 	}
 
+	/**
+	 * Add a route to the routes list
+	 *
+	 * @param $name
+	 * @param $args
+	 * @throws Exception
+	 */
 	public function __call($name, $args)
 	{
 		$allowed_calls = array('batch', 'delete', 'get', 'head', 'post', 'head', 'put');
@@ -130,13 +191,18 @@ class Quicc
 		$this->routes[$args[0]] = $this->parse_route($args[0], $name, $args[1]);
 	}
 
+	/**
+	 * Detects the route from a list of routes
+	 *
+	 * @return mixed|null
+	 */
 	private function detect_route()
 	{
 		$piece_count = $this->count_url_pieces($this->uri);
 
 		foreach($this->routes as $name => $route)
 		{
-			if(preg_match($route['pattern'], $this->uri) !== 0 && $route['piece_count'] == $piece_count)
+			if(preg_match($route['pattern'], $this->uri) !== 0 && $route['piece_count'] === $piece_count)
 			{
 				return $route;
 			}
@@ -145,6 +211,12 @@ class Quicc
 		return null;
 	}
 
+	/**
+	 * Detects and constructs parameters
+	 *
+	 * @return array
+	 * @throws ReflectionException
+	 */
 	private function detect_params()
 	{
 		preg_match_all($this->route['pattern'], $this->uri, $matches);
@@ -223,6 +295,15 @@ class Quicc
 		return $processed_params;
 	}
 
+	/**
+	 * Builds XML which will be returned during XML response
+	 *
+	 * @param $data
+	 * @param null $root
+	 * @param null $xml
+	 * @return mixed
+	 * @throws Exception
+	 */
 	private function build_xml($data, $root = null, $xml = null)
 	{
 		if(!is_array($data))
@@ -252,6 +333,15 @@ class Quicc
 		return $_xml->asXML();
 	}
 
+	/**
+	 * Validates user input type
+	 *
+	 * @param $value
+	 * @param $type
+	 * @param $throw_exception
+	 * @return null
+	 * @throws Exception
+	 */
 	private function validate_input($value, $type, $throw_exception)
 	{
 		$types = array(
@@ -264,22 +354,29 @@ class Quicc
 		{
 			throw new Exception(sprintf('Data type "%s" does not exist!', $type));
 		}
-		else
-		{
-			if(filter_var($value, $types[$type]))
-			{
-				return $value;
-			}
 
-			if($throw_exception)
-			{
-				throw new Exception(sprintf('Value "%s" is not valid "%s"!', $value, $type));
-			}
+		if(filter_var($value, $types[$type]))
+		{
+			return $value;
+		}
+
+		if($throw_exception)
+		{
+			throw new Exception(sprintf('Value "%s" is not valid "%s"!', $value, $type));
 		}
 
 		return null;
 	}
 
+	/**
+	 * Returns the value of a query parameter
+	 *
+	 * @param $name
+	 * @param null $type
+	 * @param bool $throw_exception
+	 * @return mixed|null
+	 * @throws Exception
+	 */
 	public function qs($name, $type = null, $throw_exception = false)
 	{
 		$value = filter_input(INPUT_GET, $name, FILTER_SANITIZE_SPECIAL_CHARS);
@@ -288,12 +385,19 @@ class Quicc
 		{
 			return $this->validate_input($value, $type, $throw_exception);
 		}
-		else
-		{
-			return $value;
-		}
+
+		return $value;
 	}
 
+	/**
+	 * Returns a value from POST request or JSON value from POST body
+	 *
+	 * @param $name
+	 * @param null $type
+	 * @param bool $throw_exception
+	 * @return mixed|null
+	 * @throws Exception
+	 */
 	public function data($name, $type = null, $throw_exception = false)
 	{
 		if($_SERVER['CONTENT_TYPE'] === 'application/json')
@@ -309,29 +413,48 @@ class Quicc
 		{
 			return $this->validate_input($value, $type, $throw_exception);
 		}
-		else
-		{
-			return $value;
-		}
+
+		return $value;
 	}
 
+	/**
+	 * Returns URL params
+	 *
+	 * @return array|null
+	 */
 	public function get_params()
 	{
 		return $this->params;
 	}
 
+	/**
+	 * Returns JSON response
+	 *
+	 * @param $response
+	 */
 	public function json($response)
 	{
-		header('Content-Type: application/json');
+		$this->set_content_type('application/json');
 		echo json_encode($response);
 	}
 
+	/**
+	 * Returns XML response
+	 *
+	 * @param $response
+	 * @throws Exception
+	 */
 	public function xml($response)
 	{
-		header('Content-Type: text/xml');
+		$this->set_content_type('text/xml');
 		echo $this->build_xml($response);
 	}
 
+	/**
+	 * Processes all routes
+	 *
+	 * @throws ReflectionException|Exception
+	 */
 	public function listen()
 	{
 		$this->uri = $_SERVER['REQUEST_URI'];
